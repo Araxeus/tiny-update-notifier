@@ -1,0 +1,16 @@
+[package]
+name = "tiny_update_notifier"
+authors = ["Araxeus <oaeben@gmail.com>"]
+version = "1.0.0"
+edition = "2021"
+description = "Tiny update notifier utility for rust cli programs"
+homepage = "https://github.com/Araxeus/tiny_update_notifier"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/Araxeus/tiny_update_notifier"
+keywords = ["cli", "update", "notify", "notifier"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+directories = "4.0"
+notify-rust = "4.5.8"
