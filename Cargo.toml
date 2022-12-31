@@ -12,5 +12,5 @@ keywords = ["cli", "update", "notify", "notifier"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-directories = "4.0"
-notify-rust = "4.5.8"
+directories = "4.0.1"
+notify-rust = "4.6.0"
