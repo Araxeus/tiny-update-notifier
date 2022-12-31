@@ -20,9 +20,9 @@ use std::{
 };
 
 /// Spawns a thread to check for updates and notify user if there is a new version available.
-/// 
+///
 /// This function returns immediately and does not block the current thread.
-/// 
+///
 /// ## Examples
 ///
 /// ```rust,no_run
