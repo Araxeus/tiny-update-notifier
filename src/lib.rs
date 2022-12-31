@@ -1,3 +1,4 @@
+#![allow(clippy::multiple_crate_versions)] // TODO: Remove this when `directories` crate is updated to 3.0.2
 use notify_rust::Notification;
 
 use directories::ProjectDirs;
