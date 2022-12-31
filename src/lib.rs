@@ -104,6 +104,9 @@ impl Notifier {
     fn get_latest_version(&mut self) -> Result<String, Error> {
         let repo_url = self.repo_url;
         let data = repo_url.split('/').collect::<Vec<&str>>();
+        if data.len() < 5 {
+            return Err(Error::new(ErrorKind::InvalidInput, "Invalid repo url"));
+        };
         let owner = data[3];
         let repo = data[4];
 
