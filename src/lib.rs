@@ -13,6 +13,7 @@ use directories::ProjectDirs;
 /// );
 /// ```
 use notify_rust::Notification;
+
 use std::{
     fs,
     io::{self, Error, ErrorKind},
@@ -128,7 +129,7 @@ impl Notifier {
             .ok();
     }
 
-    fn get_latest_version(&mut self) -> Result<String, Error> {
+    fn get_latest_version(&mut self) -> io::Result<String> {
         let repo_url = self.repo_url;
         let data = repo_url.split('/').collect::<Vec<&str>>();
         if data.len() < 5 {
@@ -147,13 +148,12 @@ impl Notifier {
         match output {
             Ok(output) => {
                 let stdout = String::from_utf8_lossy(&output.stdout);
-                Ok(stdout
-                    .split("\"tag_name\": \"")
-                    .nth(1)
-                    .unwrap()
-                    .split('\"')
-                    .next()
-                    .unwrap()
+                let data: serde_json::Value = serde_json::from_str(&stdout)?;
+                Ok(data["tag_name"]
+                    .as_str()
+                    .ok_or_else(|| {
+                        Error::new(ErrorKind::InvalidInput, "Invalid tag_name in release")
+                    })?
                     .trim_start_matches('v')
                     .to_string())
             }
