@@ -33,14 +33,17 @@ Checks for update on program launch if more than 24h have passed since the last 
 Install tiny_update_notifier using Cargo
 
 ```bash
-  cd my-project
   cargo add tiny_update_notifier
 ```
     
 ## Usage
-
+##### Multi-threaded / Concurrent / Non-blocking / Asynchronous :
 ```rust
-tiny_update_notifier::Notifier::new().run(pkg_version, pkg_name, pkg_repo_url)
+tiny_update_notifier::run_notifier(pkg_version, pkg_name, pkg_repo_url);
+```
+##### Single-threaded / Nonparallel / blocking / Synchronous :
+```rust
+tiny_update_notifier::Notifier::new().run(pkg_version, pkg_name, pkg_repo_url);
 ```
 
 ## Examples
