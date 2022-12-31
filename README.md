@@ -1,22 +1,30 @@
 
-<h1 align="center">Tiny Update Notifier 🔔</h1>
-<p>
-  <a href="https://github.com/Araxeus/tiny-update-notifier/releases" target="_blank">
-    <img alt="Version" src="https://img.shields.io/crates/v/tiny_update_notifier" onerror='this.onerror=undefined; this.src="https://img.shields.io/badge/version-1.0.0-blue.svg?cacheSeconds=2592000"'/>
+<h1 align="center">🔔 Tiny Update Notifier 🔔</h1>
+
+<p align="center">
+  <a href="https://github.com/Araxeus/tiny-update-notifier" target="_blank">
+    <img alt="GitHub" src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" />
   </a>
+  <a href="https://crates.io/crates/tiny_update_notifier" target="_blank">
+    <img alt="Version" src="https://img.shields.io/crates/v/tiny_update_notifier?logo=semanticweb&style=for-the-badge&labelColor=yellow&color=grey" onerror='this.onerror=undefined; this.src="https://img.shields.io/badge/version-1.0.0-blue.svg?cacheSeconds=2592000"'/>
+  </a>
+</p>
+<p align="center">
   <a href="https://github.com/Araxeus/tiny-update-notifier/blob/main/LICENSE" target="_blank">
-    <img alt="License: MIT" src="https://img.shields.io/github/license/Araxeus/tiny-update-notifier?color=yellow" />
+    <img alt="License: MIT" src="https://img.shields.io/github/license/Araxeus/tiny-update-notifier?color=blue&style=plastic" />
   </a>
-   <a href="https://github.com/Araxeus/tiny-update-notifier" target="_blank">
-    <img alt="Maintenance" src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" />
+  <a href="https://github.com/Araxeus/tiny-update-notifier" target="_blank">
+    <img alt="Maintenance" src="https://img.shields.io/badge/Maintained%3F-yes-green.svg?style=plastic" />
   </a>
 </p>
 
+<p align="center">
 Tiny update notifier utility for rust cli programs
+</p>
+
+---
 
 Checks for update on program launch if more than 24h have passed since the last check, then pops up a notification if a new version was found 📢
-
-## Screenshots
 
 ![App Screenshot](https://user-images.githubusercontent.com/78568641/210151741-701ca397-d9bb-4acc-8e62-292a1d7495d4.png)
 
@@ -51,3 +59,5 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 ```
+----
+> Used by https://github.com/Araxeus/ls-interactive/
