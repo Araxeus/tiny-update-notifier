@@ -1,31 +1,55 @@
 #![allow(clippy::multiple_crate_versions)] // TODO: Remove this when `directories` crate is updated to 3.0.2
-use notify_rust::Notification;
-
 use directories::ProjectDirs;
+/// Use `tiny_update_notifier::run_notifier(pkg_version, pkg_name, pkg_repo_url)`
+/// spawns a new thread to check for updates and notify user if there is a new version available.
+///
+/// ## Examples
+///
+/// ```rust,no_run
+/// tiny_update_notifier::run_notifier(
+///     env!("CARGO_PKG_VERSION"),
+///     env!("CARGO_PKG_NAME"),
+///     env!("CARGO_PKG_REPOSITORY"),
+/// );
+/// ```
+use notify_rust::Notification;
 use std::{
     fs,
     io::{self, Error, ErrorKind},
     time::Duration,
 };
 
-/// Use `tiny_updater_notifier::Notifier::new().run(pkg_version, pkg_name, pkg_repo_url)`
+/// Spawns a thread to check for updates and notify user if there is a new version available.
+///
+/// ## Examples
+///
+/// ```rust,no_run
+/// tiny_update_notifier::run_notifier(
+///     env!("CARGO_PKG_VERSION"),
+///     env!("CARGO_PKG_NAME"),
+///     env!("CARGO_PKG_REPOSITORY"),
+/// );
+/// ```
+pub fn run_notifier(version: &'static str, name: &'static str, repo_url: &'static str) {
+    std::thread::spawn(move || {
+        Notifier::new(version, name, repo_url).run();
+    });
+}
+
+/// Use `tiny_update_notifier::Notifier::new().run(pkg_version, pkg_name, pkg_repo_url)`
 /// to check for updates and notify user if there is a new version available.
 ///
 /// ## Examples
 ///
 /// ```rust,no_run
-/// use tiny_updater_notifier::Notifier;
-///
-/// fn main() -> std::io::Result<()> {
-///         Notifier::new(
+/// std::thread::spawn(|| {
+///     tiny_update_notifier::Notifier::new(
 ///         env!("CARGO_PKG_VERSION"),
 ///         env!("CARGO_PKG_NAME"),
 ///         env!("CARGO_PKG_REPOSITORY"),
 ///     )
 ///     .run();
-///
-///     Ok(())
-/// }
+/// });
 /// ```
 pub struct Notifier {
     version: &'static str,
@@ -40,18 +64,14 @@ impl Notifier {
     /// ## Examples
     ///
     /// ```rust,no_run
-    /// use tiny_updater_notifier::Notifier;
-    ///
-    /// fn main() -> std::io::Result<()> {
-    ///         Notifier::new(
+    /// std::thread::spawn(|| {
+    ///     tiny_update_notifier::Notifier::new(
     ///         env!("CARGO_PKG_VERSION"),
     ///         env!("CARGO_PKG_NAME"),
     ///         env!("CARGO_PKG_REPOSITORY"),
     ///     )
     ///     .run();
-    ///
-    ///     Ok(())
-    /// }
+    /// });
     /// ```
 
     #[must_use]
@@ -64,13 +84,13 @@ impl Notifier {
     }
 
     pub fn run(&mut self) {
-        std::thread::scope(|_| match Self::should_check_update(self) {
+        match Self::should_check_update(self) {
             Err(e) => {
                 Self::notification(self, &format!("Error: should_check_update() Failed: \n{e}"));
             }
             Ok(true) => Self::check_version(self),
             Ok(false) => (),
-        });
+        };
     }
 
     fn check_version(&mut self) {
@@ -89,6 +109,10 @@ impl Notifier {
                     ),
                 );
             }
+
+            Self::write_last_checked(self).unwrap_or_else(|e| {
+                Self::notification(self, &format!("Error: write_last_checked() failed: \n{e}"));
+            });
         }
     }
 
@@ -117,10 +141,6 @@ impl Notifier {
                 "https://api.github.com/repos/{owner}/{repo}/releases/latest"
             ))
             .output();
-
-        Self::write_last_checked(self).unwrap_or_else(|e| {
-            Self::notification(self, &format!("Error: write_last_checked() failed: \n{e}"));
-        });
 
         match output {
             Ok(output) => {
@@ -171,14 +191,3 @@ impl Notifier {
             .ok_or_else(|| io::Error::new(ErrorKind::Other, "Could not get project directory"))
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn it_works() {
-//         let result = add(2, 2);
-//         assert_eq!(result, 4);
-//     }
-// }

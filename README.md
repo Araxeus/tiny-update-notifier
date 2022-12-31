@@ -40,23 +40,38 @@ Install tiny_update_notifier using Cargo
 ## Usage
 
 ```rust
-tiny_updater_notifier::Notifier::new().run(pkg_version, pkg_name, pkg_repo_url)
+tiny_update_notifier::Notifier::new().run(pkg_version, pkg_name, pkg_repo_url)
 ```
 
-## Example
+## Examples
 
-```rust,no_run
-use tiny_updater_notifier::Notifier;
+```rust
+// Spawns a thread to check for updates and notify user if there is a new version available.
+use tiny_update_notifier::run_notifier;
 
-fn main() -> std::io::Result<()> {
-        Notifier::new(
+fn main() {
+    run_notifier(
         env!("CARGO_PKG_VERSION"),
         env!("CARGO_PKG_NAME"),
         env!("CARGO_PKG_REPOSITORY"),
-    )
-    .run();
+    );
+}
+```
 
-    Ok(())
+```rust
+// equivalent to the code above
+use std::thread;
+use tiny_update_notifier::Notifier;
+
+fn main() {
+    thread::spawn(|| {
+        Notifier::new(
+            env!("CARGO_PKG_VERSION"),
+            env!("CARGO_PKG_NAME"),
+            env!("CARGO_PKG_REPOSITORY"),
+        )
+        .run();
+    });
 }
 ```
 ----
