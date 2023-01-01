@@ -899,7 +899,7 @@ checksum = "2e153e1f1acaef8acc537e68b44906d2db6436e2b35ac2c6b42640fff91f00fd"
 
 [[package]]
 name = "tiny_update_notifier"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "directories",
  "notify-rust",
