@@ -1,51 +1,92 @@
-#![allow(clippy::multiple_crate_versions)] // TODO: Remove this when `directories` crate is updated to 3.0.2
+#![allow(clippy::multiple_crate_versions)] // TODO: Remove this when possible
 use directories::ProjectDirs;
-/// Use `tiny_update_notifier::run_notifier(pkg_version, pkg_name, pkg_repo_url)`
+/// Use either `tiny_update_notifier::{check_cratesIO, check_github}`
 /// spawns a new thread to check for updates and notify user if there is a new version available.
 ///
 /// ## Examples
 ///
 /// ```rust,no_run
-/// tiny_update_notifier::run_notifier(
+/// tiny_update_notifier::check_cratesIO(
+///     env!("CARGO_PKG_VERSION"),
+///     env!("CARGO_PKG_NAME"),
+/// );
+///
+/// tiny_update_notifier::check_github(
 ///     env!("CARGO_PKG_VERSION"),
 ///     env!("CARGO_PKG_NAME"),
 ///     env!("CARGO_PKG_REPOSITORY"),
 /// );
 /// ```
 use notify_rust::Notification;
+
 use std::{
     fs,
     io::{self, Error, ErrorKind},
     time::Duration,
 };
 
-/// Spawns a thread to check for updates and notify user if there is a new version available.
+/// Source to check for updates
+pub enum Source {
+    /// Check for updates on Crates.io
+    ///
+    /// (Only works if the package is published on Crates.io)
+    CratesIO,
+    /// Check for updates on GitHub
+    ///
+    /// (Only works if the package is published on GitHub)
+    GitHub,
+}
+
+/// Spawns a thread to check for updates on Crates.io and notify user if there is a new version available.
 ///
 /// This function returns immediately and does not block the current thread.
 ///
 /// ## Examples
 ///
 /// ```rust,no_run
-/// tiny_update_notifier::run_notifier(
+/// tiny_update_notifier::check_cratesIO(
+///     env!("CARGO_PKG_VERSION"),
+///     env!("CARGO_PKG_NAME"),
+/// );
+/// ```
+#[allow(non_snake_case)]
+pub fn check_cratesIO(version: &'static str, name: &'static str) {
+    self::spawn(Source::CratesIO, version, name, "");
+}
+
+/// Spawns a thread to check for updates on GitHub Releases and notify user if there is a new version available.
+///
+/// This function returns immediately and does not block the current thread.
+///
+/// ## Examples
+///
+/// ```rust,no_run
+/// tiny_update_notifier::check_github(
 ///     env!("CARGO_PKG_VERSION"),
 ///     env!("CARGO_PKG_NAME"),
 ///     env!("CARGO_PKG_REPOSITORY"),
-/// );
+/// );  
 /// ```
-pub fn run_notifier(version: &'static str, name: &'static str, repo_url: &'static str) {
+pub fn check_github(version: &'static str, name: &'static str, repo_url: &'static str) {
+    spawn(Source::GitHub, version, name, repo_url);
+}
+
+fn spawn(source: Source, version: &'static str, name: &'static str, repo_url: &'static str) {
     std::thread::spawn(move || {
-        Notifier::new(version, name, repo_url).run();
+        Notifier::new(source, version, name, repo_url).run();
     });
 }
 
-/// Use `tiny_update_notifier::Notifier::new().run(pkg_version, pkg_name, pkg_repo_url)`
+/// Use `Notifier::new(source, pkg_version, pkg_name, pkg_repo_url).run()`
 /// to check for updates and notify user if there is a new version available.
 ///
 /// ## Examples
 ///
 /// ```rust,no_run
+/// use tiny_update_notifier::{Notifier, Source};
 /// std::thread::spawn(|| {
-///     tiny_update_notifier::Notifier::new(
+///     Notifier::new(
+///         Source::GitHub,
 ///         env!("CARGO_PKG_VERSION"),
 ///         env!("CARGO_PKG_NAME"),
 ///         env!("CARGO_PKG_REPOSITORY"),
@@ -57,17 +98,20 @@ pub struct Notifier {
     version: &'static str,
     name: &'static str,
     repo_url: &'static str,
+    source: Source,
 }
 
 impl Notifier {
-    /// Use `Notifier::new().run(pkg_version, pkg_name, pkg_repo_url)`
+    /// Use `Notifier::new(source, pkg_version, pkg_name, pkg_repo_url).run()`
     /// to check for updates and notify user if there is a new version available.
     ///
     /// ## Examples
     ///
     /// ```rust,no_run
+    /// use tiny_update_notifier::{Notifier, Source};
     /// std::thread::spawn(|| {
-    ///     tiny_update_notifier::Notifier::new(
+    ///     Notifier::new(
+    ///         Source::GitHub,
     ///         env!("CARGO_PKG_VERSION"),
     ///         env!("CARGO_PKG_NAME"),
     ///         env!("CARGO_PKG_REPOSITORY"),
@@ -75,16 +119,22 @@ impl Notifier {
     ///     .run();
     /// });
     /// ```
-
     #[must_use]
-    pub const fn new(version: &'static str, name: &'static str, repo_url: &'static str) -> Self {
+    pub const fn new(
+        source: Source,
+        version: &'static str,
+        name: &'static str,
+        repo_url: &'static str,
+    ) -> Self {
         Self {
             version,
             name,
             repo_url,
+            source,
         }
     }
 
+    /// Run the notifier
     pub fn run(&mut self) {
         match Self::should_check_update(self) {
             Err(e) => {
@@ -100,14 +150,21 @@ impl Notifier {
 
         if let Ok(new_version) = Self::get_latest_version(self) {
             if new_version != current_version {
+                let link = if self.repo_url.is_empty() {
+                    String::new()
+                } else {
+                    format!(
+                        "\n{repo_url}/releases/tag/{new_version}",
+                        repo_url = self.repo_url,
+                    )
+                };
+
                 Self::notification(
                     self,
                     &format!(
                         "A new release of {pkg_name} is available: \n\
-        v{current_version} -> v{new_version}\n\
-        {repo_url}/releases/tag/{new_version}",
+        v{current_version} -> v{new_version}{link}",
                         pkg_name = self.name,
-                        repo_url = self.repo_url
                     ),
                 );
             }
@@ -128,39 +185,59 @@ impl Notifier {
             .ok();
     }
 
-    fn get_latest_version(&mut self) -> Result<String, Error> {
-        let repo_url = self.repo_url;
-        let data = repo_url.split('/').collect::<Vec<&str>>();
-        if data.len() < 5 {
-            return Err(Error::new(ErrorKind::InvalidInput, "Invalid repo url"));
-        };
-        let owner = data[3];
-        let repo = data[4];
-
+    fn get_latest_version(&mut self) -> io::Result<String> {
         let output = std::process::Command::new("curl")
             .arg("--silent")
-            .arg(format!(
-                "https://api.github.com/repos/{owner}/{repo}/releases/latest"
-            ))
+            .arg(self.get_api_link()?)
             .output();
 
         match output {
             Ok(output) => {
                 let stdout = String::from_utf8_lossy(&output.stdout);
-                Ok(stdout
-                    .split("\"tag_name\": \"")
-                    .nth(1)
-                    .unwrap()
-                    .split('\"')
-                    .next()
-                    .unwrap()
-                    .trim_start_matches('v')
-                    .to_string())
+                let data: serde_json::Value = serde_json::from_str(&stdout)?;
+                let version = self.extract_version_from_json(&data);
+                Ok(version)
             }
             Err(e) => {
                 Self::notification(self, &format!("Error: get_latest_version() failed: \n{e}"));
                 Err(e)
             }
+        }
+    }
+
+    fn get_api_link(&self) -> io::Result<String> {
+        match self.source {
+            Source::CratesIO => Ok(format!("https://crates.io/api/v1/crates/{}", self.name)),
+            Source::GitHub => {
+                let repo_url = self.repo_url;
+                let data = repo_url.split('/').collect::<Vec<&str>>();
+                if data.len() < 5 {
+                    return Err(Error::new(
+                        ErrorKind::InvalidInput,
+                        "Invalid GitHub repo url",
+                    ));
+                };
+
+                Ok(format!(
+                    "https://api.github.com/repos/{owner}/{repo}/releases/latest",
+                    owner = data[3],
+                    repo = data[4]
+                ))
+            }
+        }
+    }
+
+    fn extract_version_from_json(&self, data: &serde_json::Value) -> String {
+        match self.source {
+            Source::CratesIO => data["crate"]["max_stable_version"]
+                .to_string()
+                .trim_matches('"')
+                .to_string(),
+            Source::GitHub => data["tag_name"]
+                .to_string()
+                .trim_matches('"')
+                .trim_start_matches('v')
+                .to_string(),
         }
     }
 

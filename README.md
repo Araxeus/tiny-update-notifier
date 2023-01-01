@@ -24,7 +24,8 @@ Tiny update notifier utility for rust cli programs
 
 ---
 
-Checks for update on program launch if more than 24h have passed since the last check, then pops up a notification if a new version was found 📢
+Checks for update on program launch if **more than 24h have passed** since the last check, then pops up a notification if a new version was found 📢
+> supports crates.io and github releases
 
 ![App Screenshot](https://user-images.githubusercontent.com/78568641/210151741-701ca397-d9bb-4acc-8e62-292a1d7495d4.png)
 
@@ -39,21 +40,42 @@ Install tiny_update_notifier using Cargo
 ## Usage
 ##### Multi-threaded / Concurrent / Non-blocking / Asynchronous :
 ```rust
-tiny_update_notifier::run_notifier(pkg_version, pkg_name, pkg_repo_url);
+// check on crates.io
+tiny_update_notifier::check_cratesIO(pkg_version, pkg_name);
+
+// check on github releases
+tiny_update_notifier::check_github(pkg_version, pkg_name, pkg_repo_url);
 ```
+
 ##### Single-threaded / Nonparallel / blocking / Synchronous :
 ```rust
-tiny_update_notifier::Notifier::new().run(pkg_version, pkg_name, pkg_repo_url);
+tiny_update_notifier::Notifier::new().run(
+    tiny_update_notifier::Source,
+    pkg_version,
+    pkg_name,
+    pkg_repo_url
+);
 ```
 
 ## Examples
 
 ```rust
-// Spawns a thread to check for updates and notify user if there is a new version available.
-use tiny_update_notifier::run_notifier;
+// Spawns a thread to check for updates on Crates.io and notify user if there is a new version available.
+use tiny_update_notifier::check_cratesIO;
 
 fn main() {
-    run_notifier(
+    check_cratesIO(
+        env!("CARGO_PKG_VERSION"),
+        env!("CARGO_PKG_NAME"),
+    );
+}
+```
+```rust
+// Spawns a thread to check for updates on GitHub Releases and notify user if there is a new version available.
+use tiny_update_notifier::check_github;
+
+fn main() {
+    check_github(
         env!("CARGO_PKG_VERSION"),
         env!("CARGO_PKG_NAME"),
         env!("CARGO_PKG_REPOSITORY"),
@@ -64,11 +86,12 @@ fn main() {
 ```rust
 // equivalent to the code above
 use std::thread;
-use tiny_update_notifier::Notifier;
+use tiny_update_notifier::{Notifier, Source};
 
 fn main() {
     thread::spawn(|| {
         Notifier::new(
+            Source::Github,
             env!("CARGO_PKG_VERSION"),
             env!("CARGO_PKG_NAME"),
             env!("CARGO_PKG_REPOSITORY"),
