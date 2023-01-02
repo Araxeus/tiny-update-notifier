@@ -51,7 +51,7 @@ pub enum Source {
 /// ```
 #[allow(non_snake_case)]
 pub fn check_cratesIO(version: &'static str, name: &'static str) {
-    self::spawn(Source::CratesIO, version, name, "");
+    spawn(Source::CratesIO, version, name, "");
 }
 
 /// Spawns a thread to check for updates on GitHub Releases and notify user if there is a new version available.
@@ -91,6 +91,7 @@ fn spawn(source: Source, version: &'static str, name: &'static str, repo_url: &'
 ///         env!("CARGO_PKG_NAME"),
 ///         env!("CARGO_PKG_REPOSITORY"),
 ///     )
+///     .interval(Duration::from_secs(60 * 60 * 24 * 7)) // Change interval to 7 days (Default is 24H)
 ///     .run();
 /// });
 /// ```
@@ -99,6 +100,7 @@ pub struct Notifier {
     name: &'static str,
     repo_url: &'static str,
     source: Source,
+    interval: Duration,
 }
 
 impl Notifier {
@@ -116,7 +118,8 @@ impl Notifier {
     ///         env!("CARGO_PKG_NAME"),
     ///         env!("CARGO_PKG_REPOSITORY"),
     ///     )
-    ///     .run();
+    ///    .interval(Duration::from_secs(60 * 60 * 24 * 7)) // Change interval to 7 days (Default is 24H)
+    ///    .run();
     /// });
     /// ```
     #[must_use]
@@ -131,7 +134,16 @@ impl Notifier {
             name,
             repo_url,
             source,
+            interval: Duration::from_secs(60 * 60 * 24), // Default 24H
         }
+    }
+
+    /// Change the interval between checks for updates
+    /// (Default is 24H)
+    #[must_use]
+    pub const fn interval(mut self, interval: Duration) -> Self {
+        self.interval = interval;
+        self
     }
 
     /// Run the notifier
@@ -146,10 +158,8 @@ impl Notifier {
     }
 
     fn check_version(&mut self) {
-        let current_version = self.version;
-
         if let Ok(new_version) = Self::get_latest_version(self) {
-            if new_version != current_version {
+            if new_version != self.version {
                 let link = if self.repo_url.is_empty() {
                     String::new()
                 } else {
@@ -165,6 +175,7 @@ impl Notifier {
                         "A new release of {pkg_name} is available: \n\
         v{current_version} -> v{new_version}{link}",
                         pkg_name = self.name,
+                        current_version = self.version
                     ),
                 );
             }
@@ -251,7 +262,7 @@ impl Notifier {
         if path.exists() {
             let metadata = fs::metadata(path)?;
             let last_modified_diff = metadata.modified()?.elapsed().unwrap_or_default();
-            Ok(last_modified_diff > Duration::from_secs(60 * 60 * 24)) // 1 day
+            Ok(last_modified_diff > self.interval)
         } else {
             Ok(true)
         }

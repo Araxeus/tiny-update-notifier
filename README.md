@@ -24,7 +24,9 @@ Tiny update notifier utility for rust cli programs
 
 ---
 
-Checks for update on program launch if **more than 24h have passed** since the last check, then pops up a notification if a new version was found 📢
+Checks for update if **more than 24h have passed** since the last check (Customizable),
+
+Then pops up a notification if a new version was found 📢
 > supports crates.io and github releases
 
 ![App Screenshot](https://user-images.githubusercontent.com/78568641/210151741-701ca397-d9bb-4acc-8e62-292a1d7495d4.png)
@@ -38,7 +40,7 @@ Install tiny_update_notifier using Cargo
 ```
     
 ## Usage
-##### Multi-threaded / Concurrent / Non-blocking / Asynchronous :
+##### Multi-threaded / Non-blocking :
 ```rust
 // check on crates.io
 tiny_update_notifier::check_cratesIO(pkg_version, pkg_name);
@@ -47,14 +49,16 @@ tiny_update_notifier::check_cratesIO(pkg_version, pkg_name);
 tiny_update_notifier::check_github(pkg_version, pkg_name, pkg_repo_url);
 ```
 
-##### Single-threaded / Nonparallel / blocking / Synchronous :
+##### Single-threaded / Blocking
 ```rust
-tiny_update_notifier::Notifier::new().run(
+tiny_update_notifier::Notifier::new(
     tiny_update_notifier::Source,
     pkg_version,
     pkg_name,
     pkg_repo_url
-);
+)
+.interval(Duration) //Optional, default is 24h
+.run();
 ```
 
 ## Examples
@@ -84,18 +88,19 @@ fn main() {
 ```
 
 ```rust
-// equivalent to the code above
-use std::thread;
+// Equivalent to check_github, except the interval is changed to 1 week
+use std::{thread, time::Duration};
 use tiny_update_notifier::{Notifier, Source};
 
 fn main() {
     thread::spawn(|| {
         Notifier::new(
-            Source::Github,
+            Source::GitHub,
             env!("CARGO_PKG_VERSION"),
             env!("CARGO_PKG_NAME"),
             env!("CARGO_PKG_REPOSITORY"),
         )
+        .interval(Duration::from_secs(60 * 60 * 24 * 7))
         .run();
     });
 }
