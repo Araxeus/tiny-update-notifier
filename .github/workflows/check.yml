@@ -34,9 +34,7 @@ jobs:
         if: success() || failure() # run regardless of prior step
         uses: actions-rs-plus/clippy-check@main
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-targets --all-features -- -W clippy::pedantic -W clippy::cargo -W clippy::nursery -D warnings
-          name: Clippy Result
 
       - name: Clippy check
         run: cargo clippy
