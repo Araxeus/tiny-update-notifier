@@ -12,6 +12,6 @@ keywords = ["cli", "update", "notify", "notifier", "informer"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-directories = "5.0.0"
+directories = "5.0.1"
 notify-rust = "4.8.0"
 serde_json = "1.0.96"
