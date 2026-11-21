@@ -134,7 +134,7 @@ impl Notifier {
             name,
             repo_url,
             source,
-            interval: Duration::from_secs(60 * 60 * 24), // Default 24H
+            interval: Duration::from_hours(24), // Default 24H
         }
     }
 
@@ -154,10 +154,10 @@ impl Notifier {
             }
             Ok(true) => Self::check_version(self),
             Ok(false) => (),
-        };
+        }
     }
 
-    fn check_version(&mut self) {
+    fn check_version(&self) {
         if let Ok(new_version) = Self::get_latest_version(self) {
             if new_version != self.version {
                 let link = if self.repo_url.is_empty() {
@@ -186,7 +186,7 @@ impl Notifier {
         }
     }
 
-    fn notification(&mut self, body: &str) {
+    fn notification(&self, body: &str) {
         Notification::new()
             .summary(self.name)
             .body(body)
@@ -196,7 +196,7 @@ impl Notifier {
             .ok();
     }
 
-    fn get_latest_version(&mut self) -> io::Result<String> {
+    fn get_latest_version(&self) -> io::Result<String> {
         let output = std::process::Command::new("curl")
             .arg("--silent")
             .arg(self.get_api_link()?)
@@ -227,7 +227,7 @@ impl Notifier {
                         ErrorKind::InvalidInput,
                         "Invalid GitHub repo url",
                     ));
-                };
+                }
 
                 Ok(format!(
                     "https://api.github.com/repos/{owner}/{repo}/releases/latest",
@@ -252,7 +252,7 @@ impl Notifier {
         }
     }
 
-    fn should_check_update(&mut self) -> io::Result<bool> {
+    fn should_check_update(&self) -> io::Result<bool> {
         let binding = Self::get_cache_dir(self)?;
         let cache_dir = binding.cache_dir();
         if !cache_dir.exists() {
@@ -268,16 +268,15 @@ impl Notifier {
         }
     }
 
-    fn write_last_checked(&mut self) -> io::Result<()> {
+    fn write_last_checked(&self) -> io::Result<()> {
         let path = Self::get_cache_dir(self)?
             .cache_dir()
             .join(format!("{}-last-update-check", self.name));
         fs::write(path, "")
     }
 
-    fn get_cache_dir(&mut self) -> io::Result<ProjectDirs> {
+    fn get_cache_dir(&self) -> io::Result<ProjectDirs> {
         let project_dir = ProjectDirs::from("", "", self.name);
-        project_dir
-            .ok_or_else(|| io::Error::new(ErrorKind::Other, "Could not get project directory"))
+        project_dir.ok_or_else(|| io::Error::other("Could not get project directory"))
     }
 }
